@@ -11,7 +11,7 @@
   * Examples use Cloudify 3.2.
   * Currently only supports installation using a Manager (no Cloudify local workflows.)
 
-# Execution instructions
+## Execution instructions
 
   `cfy blueprints upload -p [blueprint-file-path] -b puppet`
 
