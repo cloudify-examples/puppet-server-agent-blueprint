@@ -1,8 +1,8 @@
 # cloudify-puppet-example
 
-** Note: This repository is still in development and has no formal releases.
+This repository contains several blueprints for installing a Puppet server and agent using Cloudify.
 
-** Note: This repository contains several blueprints for installing a Puppet server and agent using Cloudify.
+** Note: This repository is still in development and has no formal releases.
 
 ## About
 
