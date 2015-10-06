@@ -1,0 +1,102 @@
+tosca_definitions_version: cloudify_dsl_1_1
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/3.2/types.yaml
+  - http://www.getcloudify.org/spec/aws-plugin/1.2/plugin.yaml
+
+inputs:
+
+  agent_user:
+    description: >
+      The agent user (ubuntu for ubuntu, root for centos, etc).
+    default: ''
+
+  image_id:
+    description: >
+      The Cloud Provider Image ID.
+    default: ''
+
+  instance_type: 
+    description: >
+      The Cloud Provider instance_type/size/flavor.
+    default: ''
+
+node_types:
+
+  puppet.types.Host:
+    derived_from: cloudify.aws.nodes.Instance
+    properties:
+      cloudify_agent:
+        default:
+          user: { get_input: agent_user }
+      image_id:
+        default: { get_input: image_id }
+      instance_type:
+        default: { get_input: instance_type }
+
+  puppet.types.Server:
+    derived_from: cloudify.nodes.ApplicationServer
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: scripts/puppet/install_server.sh
+        start:
+          implementation: scripts/puppet/start_server.sh
+
+  puppet.types.Agent:
+    derived_from: cloudify.nodes.ApplicationServer
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: scripts/puppet/install_agent.sh
+        start:
+          implementation: scripts/puppet/start_agent.sh
+
+relationships:
+
+  puppet.relationships.agent_connected_to_server:
+    derived_from: cloudify.relationships.connected_to
+    source_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        preconfigure: scripts/puppet/pre_configure_agent.sh
+    target_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish: scripts/puppet/establish_agent.sh
+
+node_templates:
+
+  puppet_server:
+    type: puppet.types.Server
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: puppet_server_host
+
+  puppet_agent:
+    type: puppet.types.Agent
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: puppet_agent_host
+      - type: puppet.relationships.agent_connected_to_server
+        target: puppet_server
+
+  puppet_server_host:
+    type: puppet.types.Host
+    relationships:
+      - type: cloudify.aws.relationships.instance_connected_to_security_group
+        target: puppet_group
+
+  puppet_agent_host:
+    type: puppet.types.Host
+    relationships:
+      - type: cloudify.aws.relationships.instance_connected_to_security_group
+        target: puppet_group
+
+  puppet_group:
+    type: cloudify.aws.nodes.SecurityGroup
+    properties:
+      description: Puppet Group
+      rules:
+        - ip_protocol: tcp
+          from_port: 8140
+          to_port: 8140
+          cidr_ip: 0.0.0.0/0
