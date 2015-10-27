@@ -4,7 +4,7 @@ imports:
   - http://www.getcloudify.org/spec/cloudify/3.2/types.yaml
   - http://www.getcloudify.org/spec/aws-plugin/1.2/plugin.yaml
   - http://www.getcloudify.org/spec/fabric-plugin/1.2/plugin.yaml
-  - types/aws-local.yaml
+  - types/local/aws.yaml
 
 inputs:
 

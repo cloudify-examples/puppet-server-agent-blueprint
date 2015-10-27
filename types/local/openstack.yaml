@@ -1,5 +1,23 @@
 node_types:
 
+  puppet.types.Host:
+    derived_from: cloudify.openstack.nodes.Server
+    properties:
+      cloudify_agent:
+        default:
+          user: { get_input: agent_user }
+      install_agent:
+        default: { get_input: install_agent }
+      server:
+        default:
+          image: { get_input: image_id }
+          flavor: { get_input: flavor_id }
+
+  openstack_configuration:
+    derived_from: cloudify.nodes.Root
+    properties:
+      openstack_config: {}
+
   puppet.types.Server:
     derived_from: cloudify.nodes.ApplicationServer
     interfaces:
@@ -11,7 +29,7 @@ node_types:
               default: scripts/puppet/install_server.sh
             fabric_env:
               default:
-                host_string: { get_attribute: [ puppet_server_host, public_ip_address ] }
+                host_string: { get_attribute: [ server_ip, floating_ip_address ] }
                 user: { get_input: agent_user }
                 key_filename: { get_property: [ puppet_keypair, private_key_path ] }
         start:
@@ -21,7 +39,7 @@ node_types:
               default: scripts/puppet/start_server.sh
             fabric_env:
               default:
-                host_string: { get_attribute: [ puppet_server_host, public_ip_address ] }
+                host_string: { get_attribute: [ server_ip, floating_ip_address ] }
                 user: { get_input: agent_user }
                 key_filename: { get_property: [ puppet_keypair, private_key_path ] }
 
@@ -36,7 +54,7 @@ node_types:
               default: scripts/puppet/install_agent.sh
             fabric_env:
               default:
-                host_string: { get_attribute: [ puppet_agent_host, public_ip_address ] }
+                host_string: { get_attribute: [ agent_ip, floating_ip_address ] }
                 user: { get_input: agent_user }
                 key_filename: { get_property: [ puppet_keypair, private_key_path ] }
         start:
@@ -46,27 +64,9 @@ node_types:
               default: scripts/puppet/start_agent.sh
             fabric_env:
               default:
-                host_string: { get_attribute: [ puppet_agent_host, public_ip_address ] }
+                host_string: { get_attribute: [ agent_ip, floating_ip_address ] }
                 user: { get_input: agent_user }
                 key_filename: { get_property: [ puppet_keypair, private_key_path ] }
-
-  puppet.types.Host:
-    derived_from: cloudify.aws.nodes.Instance
-    properties:
-      cloudify_agent:
-        default:
-          user: { get_input: agent_user }
-      install_agent:
-        default: { get_input: install_agent }
-      image_id:
-        default: { get_input: image_id }
-      instance_type:
-        default: { get_input: instance_type }
-
-  aws_configuration:
-    derived_from: cloudify.nodes.Root
-    properties:
-      aws_config: {}
 
 relationships:
 
@@ -81,7 +81,7 @@ relationships:
               default: scripts/puppet/pre_configure_agent.sh
             fabric_env:
               default:
-                host_string: { get_attribute: [ puppet_agent_host, public_ip_address ] }
+                host_string: { get_attribute: [ agent_ip, floating_ip_address ] }
                 user: { get_input: agent_user }
                 key_filename: { get_property: [ puppet_keypair, private_key_path ] }
     target_interfaces:
@@ -93,6 +93,6 @@ relationships:
               default: scripts/puppet/establish_agent.sh
             fabric_env:
               default:
-                host_string: { get_attribute: [ puppet_server_host, public_ip_address ] }
+                host_string: { get_attribute: [ server_ip, floating_ip_address ] }
                 user: { get_input: agent_user }
                 key_filename: { get_property: [ puppet_keypair, private_key_path ] }

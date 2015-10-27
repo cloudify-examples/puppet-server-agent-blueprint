@@ -1,0 +1,13 @@
+node_types:
+
+  puppet.types.Host:
+    derived_from: cloudify.openstack.nodes.Server
+    properties:
+      cloudify_agent:
+        default:
+          user: { get_input: agent_user }
+      server:
+        image:
+          default: { get_input: image }
+        flavor:
+          default: { get_input: flavor }

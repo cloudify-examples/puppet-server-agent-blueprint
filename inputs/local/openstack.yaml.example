@@ -1,0 +1,20 @@
+install_agent: false
+agent_user: ubuntu
+
+keystone_username: 
+keystone_password: 
+region: 
+keystone_tenant_name: 
+keystone_url: 'https://region-a.geo-1.identity.hpcloudsvc.com:35357/v2.0/'
+nova_url: ''
+neutron_url: ''
+image_id: 34302116-bac8-4c78-9355-a6db52300aac
+flavor_id: 103
+agent_user: ubuntu
+keypair_name: openstack-puppet
+local_path: ~/.ssh/openstack-puppet.pem
+network_name: openstack-puppet-network
+subnet_name: openstack-puppet-network
+application_port_name: openstack-puppet-port
+router_name: openstack-puppet-router
+external_network_name: 'Ext-Net'
