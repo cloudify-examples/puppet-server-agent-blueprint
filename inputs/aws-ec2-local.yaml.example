@@ -1,0 +1,8 @@
+agent_user: ubuntu
+image_id: ami-3cf8b154
+instance_type: m3.large
+install_agent: false
+
+aws_access_key_id:
+aws_secret_access_key:
+ec2_region_name: us-east-1

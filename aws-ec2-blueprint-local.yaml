@@ -1,0 +1,104 @@
+tosca_definitions_version: cloudify_dsl_1_1
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/3.2/types.yaml
+  - http://www.getcloudify.org/spec/aws-plugin/1.2/plugin.yaml
+  - http://www.getcloudify.org/spec/fabric-plugin/1.2/plugin.yaml
+  - types/aws-local.yaml
+
+inputs:
+
+  install_agent:
+    description: >
+      Set to false for a local workflow.
+    default: true
+
+  agent_user:
+    description: >
+      The agent user (ubuntu for ubuntu, root for centos, etc).
+    default: ''
+
+  image_id:
+    description: >
+      The Cloud Provider Image ID.
+    default: ''
+
+  instance_type: 
+    description: >
+      The Cloud Provider instance_type/size/flavor.
+    default: ''
+
+  aws_access_key_id:
+    default: ''
+
+  aws_secret_access_key:
+    default: ''
+
+  ec2_region_name:
+    default: ''
+
+node_templates:
+
+  puppet_server:
+    type: puppet.types.Server
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: puppet_server_host
+
+  puppet_agent:
+    type: puppet.types.Agent
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: puppet_agent_host
+      - type: puppet.relationships.agent_connected_to_server
+        target: puppet_server
+
+  puppet_server_host:
+    type: puppet.types.Host
+    properties:
+      aws_config: { get_property: [ aws_configuration, aws_config ] }
+    relationships:
+      - type: cloudify.aws.relationships.instance_connected_to_security_group
+        target: puppet_group
+      - type: cloudify.aws.relationships.instance_connected_to_keypair
+        target: puppet_keypair
+
+  puppet_agent_host:
+    type: puppet.types.Host
+    properties:
+      aws_config: { get_property: [ aws_configuration, aws_config ] }
+    relationships:
+      - type: cloudify.aws.relationships.instance_connected_to_security_group
+        target: puppet_group
+      - type: cloudify.aws.relationships.instance_connected_to_keypair
+        target: puppet_keypair
+
+  puppet_keypair:
+    type: cloudify.aws.nodes.KeyPair
+    properties:
+      aws_config: { get_property: [ aws_configuration, aws_config ] }
+      resource_id: puppet_keypair
+      private_key_path: ~/.ssh/puppet_keypair.pem
+
+  puppet_group:
+    type: cloudify.aws.nodes.SecurityGroup
+    properties:
+      aws_config: { get_property: [ aws_configuration, aws_config ] }
+      description: Puppet Group
+      rules:
+        - ip_protocol: tcp
+          from_port: 22
+          to_port: 22
+          cidr_ip: 0.0.0.0/0
+        - ip_protocol: tcp
+          from_port: 8140
+          to_port: 8140
+          cidr_ip: 0.0.0.0/0
+
+  aws_configuration:
+    type: aws_configuration
+    properties:
+      aws_config:
+        aws_access_key_id: { get_input: aws_access_key_id }
+        aws_secret_access_key: { get_input: aws_secret_access_key }
+        ec2_region_name: { get_input: ec2_region_name }
