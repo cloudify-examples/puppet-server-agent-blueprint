@@ -220,3 +220,8 @@ node_templates:
         region: { get_input: region }
         nova_url: { get_input: nova_url }
         neutron_url: { get_input: neutron_url }
+
+outputs:
+
+  puppet_endpoint:
+    value: { get_attribute: [ server_ip, floating_ip_address ] }
