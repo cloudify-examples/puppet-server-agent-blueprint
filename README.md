@@ -1,3 +1,5 @@
+[![Build Status](https://circleci.com/gh/cloudify-examples/puppet-server-agent-blueprint.svg?style=shield&circle-token=:circle-token)](https://circleci.com/gh/cloudify-examples/puppet-server-agent-blueprint)
+
 # cloudify-puppet-example
 
 This repository contains several blueprints for installing a Puppet server and agent using Cloudify.

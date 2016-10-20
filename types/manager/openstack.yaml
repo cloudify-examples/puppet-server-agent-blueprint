@@ -7,7 +7,6 @@ node_types:
         default:
           user: { get_input: agent_user }
       server:
-        image:
-          default: { get_input: image }
-        flavor:
-          default: { get_input: flavor }
+        default:
+          image: { get_input: image }
+          flavor: { get_input: flavor }
