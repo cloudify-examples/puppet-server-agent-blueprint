@@ -3,11 +3,11 @@ node_types:
   puppet.types.Host:
     derived_from: cloudify.aws.nodes.Instance
     properties:
-      cloudify_agent:
+      agent_config:
         default:
+          install_method: { get_input: install_agent }
+          key: { get_property: [ puppet_keypair, private_key_path ]}
           user: { get_input: agent_user }
-      install_agent:
-        default: { get_input: install_agent }
       image_id:
         default: { get_input: image_id }
       instance_type:

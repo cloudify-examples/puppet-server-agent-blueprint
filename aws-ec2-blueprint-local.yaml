@@ -1,8 +1,8 @@
-tosca_definitions_version: cloudify_dsl_1_1
+tosca_definitions_version: cloudify_dsl_1_3
 
 imports:
-  - http://www.getcloudify.org/spec/cloudify/3.2/types.yaml
-  - http://www.getcloudify.org/spec/aws-plugin/1.2/plugin.yaml
+  - http://www.getcloudify.org/spec/cloudify/3.4/types.yaml
+  - http://www.getcloudify.org/spec/aws-plugin/1.4.3/plugin.yaml
   - http://www.getcloudify.org/spec/fabric-plugin/1.2/plugin.yaml
   - types/local/aws.yaml
 
@@ -10,8 +10,8 @@ inputs:
 
   install_agent:
     description: >
-      Set to false for a local workflow.
-    default: true
+      Set to none for a local workflow.
+    default: remote
 
   agent_user:
     description: >
@@ -27,6 +27,12 @@ inputs:
     description: >
       The Cloud Provider instance_type/size/flavor.
     default: ''
+
+  key_name:
+    default: puppet_server_example
+
+  key_path:
+    default: ~/.ssh/puppet_server_example.pem
 
   aws_access_key_id:
     default: ''
@@ -77,8 +83,8 @@ node_templates:
     type: cloudify.aws.nodes.KeyPair
     properties:
       aws_config: { get_property: [ aws_configuration, aws_config ] }
-      resource_id: puppet_keypair
-      private_key_path: ~/.ssh/puppet_keypair.pem
+      resource_id: { get_input: key_name }
+      private_key_path: { get_input: key_path }
 
   puppet_group:
     type: cloudify.aws.nodes.SecurityGroup
