@@ -3,20 +3,15 @@ node_types:
   puppet.types.Host:
     derived_from: cloudify.openstack.nodes.Server
     properties:
-      cloudify_agent:
+      agent_config:
         default:
           user: { get_input: agent_user }
-      install_agent:
-        default: { get_input: install_agent }
+          key: { get_property: [ puppet_keypair, private_key_path ]}
+          install_method: { get_input: install_agent }
       server:
         default:
           image: { get_input: image_id }
           flavor: { get_input: flavor_id }
-
-  openstack_configuration:
-    derived_from: cloudify.nodes.Root
-    properties:
-      openstack_config: {}
 
   puppet.types.Server:
     derived_from: cloudify.nodes.ApplicationServer
