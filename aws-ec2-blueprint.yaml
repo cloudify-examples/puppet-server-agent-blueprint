@@ -1,40 +1,29 @@
 tosca_definitions_version: cloudify_dsl_1_3
 
 imports:
-  - http://www.getcloudify.org/spec/cloudify/3.4/types.yaml
-  - http://www.getcloudify.org/spec/aws-plugin/1.4.4/plugin.yaml
+  - http://www.getcloudify.org/spec/cloudify/4.0/types.yaml
+  - http://getcloudify.org.s3.amazonaws.com/spec/aws-plugin/1.4.4/plugin.yaml
   - types/manager/puppet.yaml
-  - types/manager/aws.yaml
 
 inputs:
 
-  agent_user:
-    description: >
-      The agent user (ubuntu for ubuntu, root for centos, etc).
-    default: ''
+  key_name:
+    default: puppet-blueprint-key
 
-  install_agent:
-    default: remote
+  private_key_path:
+    default: ~/.ssh/puppet-blueprint-key.pem
 
-  image_id:
-    description: >
-      The Cloud Provider Image ID.
-    default: ''
-
-  instance_type: 
-    description: >
-      The Cloud Provider instance_type/size/flavor.
-    default: ''
-
-  agent_keypair_file:
+  vpc_id:
     type: string
-    default: ''
 
-  aws_access_key_id:
-    description: YOUR AWS ACCESS KEY ID
+  vpc_cidr_block:
+    type: string
 
-  aws_secret_access_key:
-    description: YOUR AWS SECRET ACCESS KEY
+  subnet_id:
+    type: string
+
+  subnet_cidr:
+    type: string
 
   ec2_region_name:
     default: us-east-1
@@ -42,10 +31,25 @@ inputs:
   ec2_region_endpoint:
     default: ec2.us-east-1.amazonaws.com
 
-  aws_configuration:
-    default:
-      aws_access_key_id: { get_input: aws_access_key_id }
-      aws_secret_access_key: { get_input: aws_secret_access_key }
+  availability_zone:
+    default: us-east-1e
+
+  ami:
+    description: >
+      Amazon Ubuntu 14.04 AMI
+
+  instance_type:
+    description: >
+      Agent VM Instance Type
+
+  agent_user:
+    default: ubuntu
+
+dsl_definitions:
+
+    aws_config: &aws_config
+      aws_access_key_id: { get_secret: aws_access_key_id }
+      aws_secret_access_key: { get_secret: aws_secret_access_key }
       ec2_region_name: { get_input: ec2_region_name }
       ec2_region_endpoint: { get_input: ec2_region_endpoint }
 
@@ -66,28 +70,104 @@ node_templates:
         target: puppet_server
 
   puppet_server_host:
-    type: puppet.types.Host
+    type: cloudify.aws.nodes.Instance
     properties:
-      aws_config: { get_input: aws_configuration }
+      agent_config:
+        install_method: remote
+        port: 22
+        user: { get_input: agent_user }
+        key: { get_property: [ key, private_key_path ] }
+      aws_config: *aws_config
+      image_id: { get_input: ami }
+      instance_type: { get_input: instance_type }
+      parameters:
+          placement: { get_property: [ subnet, availability_zone ] }
     relationships:
+      - type: cloudify.aws.relationships.instance_connected_to_keypair
+        target: key
+      - type: cloudify.aws.relationships.instance_connected_to_subnet
+        target: subnet
       - type: cloudify.aws.relationships.instance_connected_to_security_group
         target: puppet_group
+      - type: cloudify.aws.relationships.instance_connected_to_elastic_ip
+        target: server_ip
 
   puppet_agent_host:
-    type: puppet.types.Host
+    type: cloudify.aws.nodes.Instance
     properties:
-      aws_config: { get_input: aws_configuration }
+      agent_config:
+        install_method: remote
+        port: 22
+        user: { get_input: agent_user }
+        key: { get_property: [ key, private_key_path ] }
+      aws_config: *aws_config
+      image_id: { get_input: ami }
+      instance_type: { get_input: instance_type }
+      parameters:
+          placement: { get_property: [ subnet, availability_zone ] }
     relationships:
+      - type: cloudify.aws.relationships.instance_connected_to_keypair
+        target: key
+      - type: cloudify.aws.relationships.instance_connected_to_subnet
+        target: subnet
       - type: cloudify.aws.relationships.instance_connected_to_security_group
         target: puppet_group
+      - type: cloudify.aws.relationships.instance_connected_to_elastic_ip
+        target: agent_ip
 
   puppet_group:
     type: cloudify.aws.nodes.SecurityGroup
     properties:
-      aws_config: { get_input: aws_configuration }
+      aws_config: *aws_config
       description: Puppet Group
       rules:
+        - ip_protocol: tcp
+          from_port: 22
+          to_port: 22
+          cidr_ip: { get_input: vpc_cidr_block }
         - ip_protocol: tcp
           from_port: 8140
           to_port: 8140
           cidr_ip: 0.0.0.0/0
+    relationships:
+      - type: cloudify.aws.relationships.security_group_contained_in_vpc
+        target: vpc
+
+  subnet:
+    type: cloudify.aws.nodes.Subnet
+    properties:
+      aws_config: *aws_config
+      use_external_resource: true
+      resource_id: { get_input: subnet_id }
+      cidr_block: { get_input: subnet_cidr }
+      availability_zone: { get_input: availability_zone }
+    relationships:
+      - type: cloudify.aws.relationships.subnet_contained_in_vpc
+        target: vpc
+
+  vpc:
+    type: cloudify.aws.nodes.VPC
+    properties:
+      aws_config: *aws_config
+      use_external_resource: true
+      resource_id: { get_input: vpc_id }
+      cidr_block: { get_input: vpc_cidr_block }
+
+  key:
+    type: cloudify.aws.nodes.KeyPair
+    properties:
+      aws_config: *aws_config
+      resource_id: { get_input: key_name }
+      private_key_path: { get_input: private_key_path }
+
+  server_ip:
+    type: cloudify.aws.nodes.ElasticIP
+    properties:
+      aws_config: *aws_config
+      domain: vpc
+
+  agent_ip:
+    type: cloudify.aws.nodes.ElasticIP
+    properties:
+      aws_config: *aws_config
+      domain: vpc
