@@ -13,11 +13,6 @@ node_types:
       instance_type:
         default: { get_input: instance_type }
 
-  aws_configuration:
-    derived_from: cloudify.nodes.Root
-    properties:
-      aws_config: {}
-
   puppet.types.Server:
     derived_from: cloudify.nodes.ApplicationServer
     interfaces:

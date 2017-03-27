@@ -1,3 +1,9 @@
 agent_user: ubuntu
+install_agent: remote
 image_id: ami-3cf8b154
 instance_type: m3.large
+agent_keypair_file: /root/.ssh/agent_key.pem
+aws_access_key_id: ''
+aws_secret_access_key: ''
+ec2_region_name: us-east-1
+ec2_region_endpoint: ec2.us-east-1.amazonaws.com
