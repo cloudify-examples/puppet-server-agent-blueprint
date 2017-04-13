@@ -22,10 +22,9 @@ dependencies:
 test:
   override:
     - cfy init
-    - cfy blueprints validate openstack-blueprint-local.yaml
-    - cfy blueprints validate aws-ec2-blueprint-local.yaml
     - cfy blueprints validate openstack-blueprint.yaml
-    - cfy blueprints validate aws-ec2-blueprint.yaml
+    - cfy blueprints validate aws-blueprint.yaml
+    - cfy blueprints validate azure-blueprint.yaml
 
 deployment:
   release:
