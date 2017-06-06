@@ -4,7 +4,13 @@
 
 This repository contains several blueprints for installing a Puppet server and agent using Cloudify.
 
-** Note: This repository is still in development and has no formal releases.
+
+## prerequisites
+
+You will need a *Cloudify Manager* running in either AWS, Azure, or Openstack.
+
+If you have not already, set up the [example Cloudify environment](https://github.com/cloudify-examples/cloudify-environment-setup). Installing that blueprint and following all of the configuration instructions will ensure you have all of the prerequisites, including keys, plugins, and secrets.
+
 
 ## About
 
@@ -13,13 +19,37 @@ This repository contains several blueprints for installing a Puppet server and a
   * See [Puppet Requirements](https://docs.puppet.com/puppet/4.2/system_requirements.html)
   * Examples use Cloudify 4.0.
 
-## Manager Execution instructions
 
-  `cfy install [blueprint-file-path] -i [inputs-file-path]`
+### Execute Install
 
-## Local Execution instructions
+Next you provide those inputs to the blueprint and execute install:
 
-  `cp inputs/local/aws.yaml.example inputs.yaml` or 
-    `cp inputs/local/openstack.yaml.example inputs`
 
-  ** Edit the inputs.yaml file with your cloud information
+#### For AWS run:
+
+```shell
+$ cfy install \
+    https://github.com/cloudify-examples/puppet-server-agent-blueprint/archive/4.0.1.1.zip \
+    -b pup \
+    -n aws-blueprint.yaml
+```
+
+
+#### For Azure run:
+
+```shell
+$ cfy install \
+    https://github.com/cloudify-examples/puppet-server-agent-blueprint/archive/4.0.1.1.zip \
+    -b pup \
+    -n azure-blueprint.yaml
+```
+
+
+#### For Openstack run:
+
+```shell
+$ cfy install \
+    https://github.com/cloudify-examples/puppet-server-agent-blueprint/archive/4.0.1.1.zip \
+    -b pup \
+    -n openstack-blueprint.yaml
+```
