@@ -14,8 +14,6 @@ node_types:
           key_name: ''
           image: { get_input: image }
           flavor: { get_input: flavor }
-      management_network_name:
-        default: { get_property: [ public_network, resource_id ] }
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
