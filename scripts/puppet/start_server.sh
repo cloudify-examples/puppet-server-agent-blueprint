@@ -1,7 +1,18 @@
 #!/bin/bash
 
 ctx logger info "Starting Puppet Server."
-sudo service puppetserver start || ctx logger error "Puppet Server Failed To Start."
+output=`sudo service puppetserver start`
+
+if [ $? -eq 0 ]
+then
+  ctx logger error "Puppet Server Started."
+else
+  ctx logger error "Puppet Server Failed To Start."
+  ctx logger error "$output"
+  exit 1
+fi
+
+
 
 #INSPECT NODE INSTANCE STATES
 #Use node instance id to inspect issues

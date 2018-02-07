@@ -5,9 +5,11 @@ node_types:
     properties:
       agent_config:
         default:
+          network: { get_input: manager_network }
           user: { get_input: agent_user }
-          key: { get_input: agent_keypair_file }
-          install_method: { get_input: install_agent }
+          install_method: init_script
+          port: 22
+          key: { get_input: agent_key_private }
       image_id:
         default: { get_input: image_id }
       instance_type:

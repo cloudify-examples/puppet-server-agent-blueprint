@@ -2,45 +2,12 @@ tosca_definitions_version: cloudify_dsl_1_3
 
 imports:
   - http://www.getcloudify.org/spec/cloudify/4.2/types.yaml
-  - http://www.getcloudify.org/spec/openstack-plugin/2.5.0/plugin.yaml
-  - http://www.getcloudify.org/spec/utilities-plugin/1.4.2.1/plugin.yaml
+  - http://www.getcloudify.org/spec/openstack-plugin/2.6.0/plugin.yaml
+  - http://www.getcloudify.org/spec/utilities-plugin/1.4.5/plugin.yaml
   - types/manager/puppet.yaml
   - types/manager/openstack.yaml
 
 inputs:
-
-  keystone_username:
-    default: { get_secret: keystone_username }
-
-  keystone_password:
-    default: { get_secret: keystone_password }
-
-  keystone_tenant_name:
-    default: { get_secret: keystone_tenant_name }
-
-  keystone_url:
-    default: { get_secret: keystone_url }
-
-  region:
-    default: { get_secret: region }
-
-  external_network_name:
-    default: { get_secret: external_network_name }
-
-  router_name:
-    default: { get_secret: router_name }
-
-  public_network_name:
-    default: { get_secret: public_network_name }
-
-  private_network_name:
-    default: { get_secret: public_network_name }
-
-  public_subnet_name:
-    default: { get_secret: public_subnet_name }
-
-  private_subnet_name:
-    default: { get_secret: public_subnet_name }
 
   agent_key_private:
     description: >
@@ -52,28 +19,35 @@ inputs:
       The content of the agent's public key.
     default: { get_secret: agent_key_public }
 
+  agent_user:
+    description: >
+      The username of the agent running on the instance created from the image.
+    default: ubuntu
+
   image:
     description: >
       An Openstack Image ID. Tested with a Ubuntu 14.04 image.
-    default: { get_secret: ubuntu_trusty_image }
+    type: string
 
   flavor:
     description: >
       An Openstack Flavor ID.
-    default: 3
+    default: '2'
 
-  agent_user:
-    description: The user name of the agent on the instance created from the image.
-    default: ubuntu
+  manager_network:
+    default: external
+
+  network_deployment_name:
+    default: openstack-example-network
 
 dsl_definitions:
 
   openstack_config: &openstack_config
-    username: { get_input: keystone_username }
-    password: { get_input: keystone_password }
-    tenant_name: { get_input: keystone_tenant_name }
-    auth_url: { get_input: keystone_url }
-    region: { get_input: region }
+    username: { get_secret: keystone_username }
+    password: { get_secret: keystone_password }
+    tenant_name: { get_secret: keystone_tenant_name }
+    auth_url: { get_secret: keystone_url }
+    region: { get_secret: keystone_region }
 
 node_templates:
 
@@ -138,7 +112,10 @@ node_templates:
     properties:
       openstack_config: *openstack_config
       floatingip:
-        floating_network_name: { get_property: [ external_network, resource_id ] }
+        floating_network_id: { get_attribute: [ openstack, deployment, outputs, external_network ] }
+    relationships:
+    - type: cloudify.relationships.contained_in
+      target: openstack
 
   agent_port:
     type: cloudify.openstack.nodes.Port
@@ -159,46 +136,30 @@ node_templates:
     properties:
       openstack_config: *openstack_config
       floatingip:
-        floating_network_name: { get_property: [ external_network, resource_id ] }
+        floating_network_id: { get_attribute: [ openstack, deployment, outputs, external_network ] }
+    relationships:
+    - type: cloudify.relationships.contained_in
+      target: openstack
 
   public_subnet:
     type: cloudify.openstack.nodes.Subnet
     properties:
       openstack_config: *openstack_config
       use_external_resource: true
-      resource_id: { get_input: public_subnet_name }
+      resource_id: { get_attribute: [ openstack, deployment, outputs, public_subnet ] }
     relationships:
-      - target: public_network
-        type: cloudify.relationships.contained_in
-      - target: router
-        type: cloudify.openstack.subnet_connected_to_router
+    - type: cloudify.relationships.contained_in
+      target: public_network
 
   public_network:
     type: cloudify.openstack.nodes.Network
     properties:
       openstack_config: *openstack_config
       use_external_resource: true
-      resource_id: { get_input: public_network_name }
-
-  router:
-    type: cloudify.openstack.nodes.Router
-    properties:
-      openstack_config: *openstack_config
-      use_external_resource: true
-      resource_id: { get_input: router_name }
+      resource_id: { get_attribute: [ openstack, deployment, outputs, public_network ] }
     relationships:
-      - target: external_network
-        type: cloudify.relationships.connected_to
-
-  external_network:
-    type: cloudify.openstack.nodes.Network
-    properties:
-      openstack_config: *openstack_config
-      use_external_resource: true
-      resource_id: { get_input: external_network_name }
-    relationships:
-      - type: cloudify.relationships.depends_on
-        target: cloudify_host_cloud_config
+    - type: cloudify.relationships.contained_in
+      target: openstack
 
   cloudify_host_cloud_config:
     type: cloudify.nodes.CloudInit.CloudConfig
@@ -211,3 +172,24 @@ node_templates:
             sudo: ['ALL=(ALL) NOPASSWD:ALL']
             ssh-authorized-keys:
               - { get_input: agent_key_public }
+
+  openstack:
+    type: cloudify.nodes.DeploymentProxy
+    properties:
+      resource_config:
+        blueprint:
+          id: { get_input: network_deployment_name }
+          blueprint_archive: https://github.com/cloudify-examples/openstack-example-network/archive/master.zip
+          main_file_name: simple-blueprint.yaml
+          external_resource: external
+        deployment:
+          id: { get_input: network_deployment_name }
+          outputs:
+            external_network: external_network
+            public_network_router: public_network_router
+            public_network: public_network
+            private_network: private_network
+            public_subnet: public_subnet
+            private_subnet: private_subnet
+          external_resource: external
+        reexecute: false
