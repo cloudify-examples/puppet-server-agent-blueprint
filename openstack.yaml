@@ -32,7 +32,7 @@ inputs:
   flavor:
     description: >
       An Openstack Flavor ID.
-    default: '2'
+    default: '3'
 
   manager_network:
     default: external
